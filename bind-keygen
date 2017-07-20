@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e
+
+root=/etc/bind/keys
+
+echo $(date '+%Y-%m-%d %H:%M:%S') "Generating key: $1 ..."
+name=$(dnssec-keygen -a HMAC-MD5 -b 512 -K $root -n USER $1)
+
+echo $(date '+%Y-%m-%d %H:%M:%S') "Applying ownership and permissions ..."
+chown root:bind $root/$name.*
+chmod 0640 $root/$name*.key
+chmod 0600 $root/$name*.private
+
+echo $(date '+%Y-%m-%d %H:%M:%S') "Adding key to named.conf.keys ..."
+secret=$(cat $root/$name.key | awk '{print $7,$8}')
+cat <<-EOF >> /etc/bind/named.conf.keys
+	key $1. {
+        	algorithm HMAC-MD5;
+        	secret "$secret";
+	};
+
+EOF
+

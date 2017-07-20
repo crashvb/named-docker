@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+# Configure: bind
+if [[ ! -e $EP_RUN ]] ; then
+	log "Configuring $(basename $0) for first run ..."
+
+	# Volume initialization
+	log "Initializing data volume ..."
+	mv --no-clobber /usr/local/share/bind/config/* $BIND_CONFIG/
+
+	# named.conf.options
+	if [[ ! -f $BIND_CONFIG/named.conf.options ]] ; then
+		render_template /usr/local/share/bind/named.conf.options $BIND_CONFIG/named.conf.options
+	else
+		log "Skipping: named.conf.options ..."
+	fi
+
+	log "Applying ownership and permissions ..."
+	find $BIND_CONFIG \( \! -user bind -o \! -group bind \) -exec chown bind:bind {} \;
+fi
+
