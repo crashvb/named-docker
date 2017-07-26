@@ -1,5 +1,5 @@
-FROM crashvb/supervisord:latest
-MAINTAINER Richard Davis <crashvb@gmail.com>
+FROM crashvb/supervisord:ubuntu
+LABEL maintainer "Richard Davis <crashvb@gmail.com>"
 
 # Install packages, download files ...
 RUN docker-apt bind9 dnsutils
