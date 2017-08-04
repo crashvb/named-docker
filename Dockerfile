@@ -19,6 +19,9 @@ ADD supervisord.bind.conf /etc/supervisor/conf.d/bind.conf
 # Configure: entrypoint
 ADD entrypoint.bind /etc/entrypoint.d/bind
 
+# Configure: healthcheck
+ADD healthcheck.bind /etc/healthcheck.d/bind
+
 EXPOSE 53/udp
 
 VOLUME ${BIND_CONFIG}

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+log "Checking if $(basename $0) is healthy ..."
+nslookup www.google.com 127.0.0.1 1>/dev/null 2>&1
+
