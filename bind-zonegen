@@ -1,0 +1,41 @@
+#!/bin/bash
+
+source /usr/local/lib/entrypoint.sh
+
+set -e
+
+if [[ -z $2 ]] ; then
+	echo "usage: $0 <zone> <fwd|1918|3171|4193> [ <update key name> ]"
+	echo "ex: $0 test.com fwd updater.test.com"
+	exit 1
+fi
+
+zone=$1
+[[ $zone =~ \.$ ]] && zone=${1%.*}
+export zone
+export file=$BIND_CONFIG/db.$zone
+
+log "Generating zone file: $file ..."
+if [[ ! -f $file ]] ; then
+	export ZONE_DOMAIN_NAME=${ZONE_DOMAIN_NAME:-$zone.}
+	install --group=bind --mode=0644 --owner=bind /dev/null $file
+	render_template /usr/local/share/bind/db $file "\$ZONE_DOMAIN_NAME \$ZONE_EMAIL \$ZONE_EXPIRE \$ZONE_NAME_SERVER \$ZONE_NEGATIVE_TTY \$ZONE_REFRESH \$ZONE_RETRY \$ZONE_SERIAL \$ZONE_TTL"
+else
+	fatal "ERROR: $file already exists!"
+fi
+
+if [[ "X$2" == "Xfwd" ]] ; then
+	config=$BIND_CONFIG/named.conf.local
+	template=/usr/local/share/bind/named.conf.local.template
+else
+	config=$BIND_CONFIG/zones.rfc$2
+	template=/usr/local/share/bind/zones.template
+fi
+
+log "Adding zone to $(basename $config) ..."
+if [[ -n $3 ]] ; then
+	log "	... with key: $3 ..."
+	export key="key $3.;"
+fi
+envsubst "\$file \$key \$zone" < "$template" >> "$config"
+

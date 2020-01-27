@@ -1,24 +1,31 @@
 #!/bin/bash
 
+source /usr/local/lib/entrypoint.sh
+
 set -e
 
-root=/etc/bind/keys
+root=$BIND_CONFIG/keys
+config_keys=$BIND_CONFIG/named.conf.keys
 
-echo $(date '+%Y-%m-%d %H:%M:%S') "Generating key: $1 ..."
-name=$(dnssec-keygen -a HMAC-MD5 -b 512 -K $root -n USER $1)
+if [[ -z $1 ]] ; then
+	echo "usage: $0 <update key name>"
+	echo "ex: $0 updater.test.com"
+	exit 1
+fi
 
-echo $(date '+%Y-%m-%d %H:%M:%S') "Applying ownership and permissions ..."
-chown root:bind $root/$name.*
-chmod 0640 $root/$name*.key
-chmod 0600 $root/$name*.private
+mkdir --parents $root
 
-echo $(date '+%Y-%m-%d %H:%M:%S') "Adding key to named.conf.keys ..."
-secret=$(cat $root/$name.key | awk '{print $7,$8}')
-cat <<-EOF >> /etc/bind/named.conf.keys
-	key $1. {
-        	algorithm HMAC-MD5;
-        	secret "$secret";
-	};
+log "Generating key: $1 ..."
+export prefix=$(dnssec-keygen -a HMAC-MD5 -b 512 -K $root -n USER $1)
 
-EOF
+log "Adding key to $config_keys ..."
+export name=$1.
+export secret=$(cat $root/$prefix.key | awk '{print $7,$8}')
+cp --backup=numbered $config_keys $config_keys.bak
+envsubst "\$name \$secret" < /usr/local/share/bind/named.conf.keys.template >> $config_keys
+
+log "Applying ownership and permissions ..."
+chown root:bind $root/$prefix.*
+chmod 0640 $root/$prefix*.key
+chmod 0600 $root/$prefix*.private
 

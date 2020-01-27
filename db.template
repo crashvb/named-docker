@@ -1,0 +1,25 @@
+$TTL ${ZONE_TTL}
+
+;==============================================
+; Origin added to names not ending
+; in a dot: ${ZONE_DOMAIN_NAME}
+;==============================================
+
+@	IN	SOA	${ZONE_NAME_SERVER}	${ZONE_EMAIL} (
+                        ${ZONE_SERIAL}	; serial
+                        ${ZONE_REFRESH}	; refresh
+                        ${ZONE_RETRY}	; retry
+                        ${ZONE_EXPIRE}	; expire
+                        ${ZONE_NEGATIVE_TTY}	; negative TTL
+			)
+
+;==============================================
+; Name servers (The name '@' is implied)
+;==============================================
+
+	IN	NS	${ZONE_NAME_SERVER}
+
+;==============================================
+
+${ZONE_NAME_SERVER}	A	127.0.0.1
+

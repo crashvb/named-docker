@@ -1,0 +1,8 @@
+zone "${zone}" in {
+	type master;
+	file "${file}";
+	allow-update {
+		${key}
+	};
+};
+

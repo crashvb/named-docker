@@ -1,0 +1,92 @@
+#!/bin/bash
+
+source /usr/local/lib/entrypoint.sh
+
+set -e
+
+root=/etc/bind/keys
+server=127.0.0.1
+
+reverseRecord() {
+	echo $1 | awk -F. '{print $4"."$3"."$2"."$1".in-addr.arpa."}'
+}
+
+
+if [[ -z $2 ]] ; then
+	echo "usage: $0 <fwdzone> <update key name> [<revzone=1.168.192.in-addr.arpa> <ip address=192.168.1.1>]"
+	echo "ex: $0 test.com updater.test.com"
+	exit 1
+fi
+
+fwdzone=$1
+key=$(ls $root/K$2*.key)
+key=${key%.*}
+revzone=${3:-1.168.192.in-addr.arpa}
+address=${4:-192.168.1.1}
+cn=$(basename $0).$fwdzone.
+revaddress=$(reverseRecord $address)
+
+log "Testing using:"
+log "	Foward Zone  : $fwdzone"
+log "	Reverse Zone : $revzone"
+log "	Update Key   : $key"
+log "	A Record     : $cn"
+log "	IP Address   : $address"
+
+nsopts=(-k $key)
+if [[ -n "$DEBUG" ]] ; then
+	nsopts+=(-d)
+	set -x
+fi
+
+function call_nsupdate()
+{
+	tmp=$(mktemp /tmp/nsupdate.XXXXXX)
+	cat > $tmp
+	[[ -n "$DEBUG" ]] && cat $tmp
+	nsupdate "${nsopts[@]}" $tmp
+	rm --force $tmp
+}
+
+log "Adding record: $cn -> $address ..."
+call_nsupdate <<-EOF
+	server $server
+	zone $fwdzone
+	update delete $cn A
+	update add $cn 3600 A $address
+	send
+EOF
+log "Testing record ..."
+[[ "X$(dig +short $cn @$server)" == "X$address" ]]
+
+log "Adding record: $address -> $cn ..."
+call_nsupdate <<-EOF
+	server $server
+	zone $revzone
+	update delete $revaddress PTR
+	update add $revaddress 3600 PTR $cn
+	send
+EOF
+log "Testing record ..."
+[[ "X$(dig +short -x $address @$server)" == "X$cn" ]]
+
+log "Removing record: $cn ..."
+call_nsupdate <<-EOF
+	server $server
+	zone $fwdzone
+	update delete $cn A
+	send
+EOF
+log "Testing record ..."
+[[ "X$(dig +short $cn @$server)" == "X" ]]
+
+log "Removing record: $address ..."
+call_nsupdate <<-EOF
+	server $server
+	zone $revzone
+	update delete $revaddress PTR
+	send
+EOF
+log "Testing record ..."
+[[ "X$(dig +short -x $address @$server)" == "X" ]]
+

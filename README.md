@@ -4,6 +4,14 @@
 
 This docker image contains [Berkeley Internet Name Domain](https://www.isc.org/downloads/bind/) (<tt>BIND</tt>).
 
+## Debugging bind
+
+### Querying on a non-standard port
+
+```bash
+nslookup -port=54 www.google.com
+```
+
 ## Entrypoint Scripts
 
 ### bind
@@ -39,7 +47,9 @@ The embedded healthcheck script is located at `/etc/healthcheck.d/named` and per
 └─ usr/
 │  └─ local/
 │     └─ bin/
-│        └─ bind-keygen
+│        ├─ bind-keygen
+│        ├─ bind-test-nsupdate
+│        └─ bind-zonegen
 └─ var/
    └─ lib/
       └─ bind/
