@@ -1,4 +1,4 @@
-FROM crashvb/supervisord:latest
+FROM crashvb/supervisord:202002211640
 LABEL maintainer "Richard Davis <crashvb@gmail.com>"
 
 # Install packages, download files ...
