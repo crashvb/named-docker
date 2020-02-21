@@ -21,8 +21,11 @@ options {
 	//========================================================================
 	//dnssec-validation auto;
 
-	auth-nxdomain no;    # conform to RFC1035
+	// Bind on all interfaces
+	listen-on { any; };
 	listen-on-v6 { any; };
+
+	auth-nxdomain no;    # conform to RFC1035
 	allow-transfer { none; };
 	minimal-responses yes;
 	notify no;

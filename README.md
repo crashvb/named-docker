@@ -4,6 +4,20 @@
 
 This docker image contains [Berkeley Internet Name Domain](https://www.isc.org/downloads/bind/) (<tt>BIND</tt>).
 
+## Quick Start
+
+### Using docker bridge
+
+```bash
+docker run --detach=true --dns=127.0.0.1 --publish=53:53/udp --tty=true crashvb/named
+```
+
+### Using host networking
+
+```bash
+docker run --detach=true --dns=127.0.0.1 --network=host --tty=true crashvb/named
+```
+
 ## Debugging bind
 
 ### Querying on a non-standard port
