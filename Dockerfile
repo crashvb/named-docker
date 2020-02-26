@@ -10,6 +10,7 @@ ADD bind-* /usr/local/bin/
 ADD db.* named.conf.* zones.* /usr/local/share/bind/
 RUN install --directory --group=bind --mode=0775 --owner=root /var/lib/bind /var/run/named && \
 	install --directory --group=adm --mode=0755 --owner=bind /var/log/bind && \
+	sed --expression="/conf.options/iinclude \"${BIND_CONFIG}/named.conf.rndc\";" --in-place ${BIND_CONFIG}/named.conf && \
 	sed --expression="/conf.options/ainclude \"${BIND_CONFIG}/named.conf.keys\";" --in-place ${BIND_CONFIG}/named.conf && \
 	sed --expression="/rfc1918/s/\/\///" --in-place ${BIND_CONFIG}/named.conf.local && \
 	sed --expression="/rfc1918/ainclude \"${BIND_CONFIG}/zones.rfc3171\";" --in-place ${BIND_CONFIG}/named.conf.local && \
@@ -17,6 +18,7 @@ RUN install --directory --group=bind --mode=0775 --owner=root /var/lib/bind /var
 	install --group=bind --mode=0644 --owner=bind /dev/null ${BIND_CONFIG}/named.conf.keys && \
 	install --group=bind --mode=0644 --owner=bind /dev/null ${BIND_CONFIG}/zones.rfc3171 && \
 	install --group=bind --mode=0644 --owner=bind /dev/null ${BIND_CONFIG}/zones.rfc4193 && \
+	rm ${BIND_CONFIG}/rndc.key && \
 	mv ${BIND_CONFIG} /usr/local/share/bind/config && \
 	mv /usr/local/share/bind/config/named.conf.options /usr/local/share/bind/config/named.conf.options.dist
 

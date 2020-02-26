@@ -6,10 +6,17 @@ set -e
 if [[ ! -e $EP_RUN ]] ; then
 	log "Configuring $(basename $0) for first run ..."
 
+	export BIND_RNDC_BITS=${BIND_RNDC_BITS:-512}
+	export BIND_RNDC_KEY_NAME=${BIND_RNDC_NAME:-rndc-key}
+	export BIND_RNDC_KEY_PATH=${BIND_RNDC_KEY_PATH:-/var/lib/bind/rndc.key}
+
 	# Volume initialization
 	if [[ ! -f $BIND_CONFIG/named.conf ]] ; then
 		log "Initializing data volume ..."
 		cp --no-clobber /usr/local/share/bind/config/* $BIND_CONFIG/
+
+		# Make it easy to use rndc ...
+		ln --symbolic $BIND_RNDC_KEY_PATH /etc/bind/rndc.key
 
 		# named.conf.options
 		if [[ ! -f $BIND_CONFIG/named.conf.options ]] ; then
@@ -17,11 +24,26 @@ if [[ ! -e $EP_RUN ]] ; then
 		else
 			log "Skipping: named.conf.options ..."
 		fi
+
+		# named.conf.rndc
+		if [[ ! -f $BIND_CONFIG/named.conf.rndc ]] ; then
+			render_template /usr/local/share/bind/named.conf.rndc $BIND_CONFIG/named.conf.rndc
+		else
+			log "Skipping: named.conf.rndc ..."
+		fi
+
+		log "Applying ownership and permissions ..."
+		find $BIND_CONFIG \( \! -user bind -o \! -group bind \) -exec chown bind:bind {} \;
 	else
 		log "Skipping data volume initialization ..."
 	fi
 
-	log "Applying ownership and permissions ..."
-	find $BIND_CONFIG \( \! -user bind -o \! -group bind \) -exec chown bind:bind {} \;
+	# rndc.key
+	log "Generating rndc key ..."
+	if [[ ! -f $BIND_RNDC_KEY_PATH ]] ; then
+		rndc-confgen -a -b $BIND_RNDC_BITS -c $BIND_RNDC_KEY_PATH -k $BIND_RNDC_KEY_NAME -u bind
+	else
+		log "Skipping: $(basename $BIND_RNDC_KEY_PATH) ..."
+	fi
 fi
 
