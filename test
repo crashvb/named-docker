@@ -9,7 +9,11 @@ revzone=1.168.192.in-addr.arpa
 
 log "Starting supervisord ..."
 /usr/bin/supervisord --configuration=/etc/supervisor/supervisord.conf &
-sleep 5
+sleep 1
+while ! grep 'running$' /var/log/supervisor/bind-stderr*.log > /dev/null ; do
+	log "Waiting for bind ..."
+	sleep 1
+done
 
 log "Generating key: $key ..."
 bind-keygen $key

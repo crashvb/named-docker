@@ -21,7 +21,8 @@ if [[ ! -f $file ]] ; then
 	install --group=bind --mode=0644 --owner=bind /dev/null $file
 	render_template /usr/local/share/bind/db $file "\$ZONE_DOMAIN_NAME \$ZONE_EMAIL \$ZONE_EXPIRE \$ZONE_NAME_SERVER \$ZONE_NEGATIVE_TTY \$ZONE_REFRESH \$ZONE_RETRY \$ZONE_SERIAL \$ZONE_TTL"
 else
-	fatal "ERROR: $file already exists!"
+	echo "ERROR: $file already exists!" >&2
+	exit 1
 fi
 
 if [[ "X$2" == "Xfwd" ]] ; then

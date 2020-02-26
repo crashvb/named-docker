@@ -53,7 +53,6 @@ test:
 		--name=$(name)-test \
 		--rm=true \
 		--tty=true \
-		$(runargs) \
 		$(registry)$(namespace)/$(image):$(tag) \
 		/test \
 		$(ARGS)
