@@ -1,4 +1,4 @@
-FROM crashvb/supervisord:202002211640
+FROM crashvb/supervisord:202103212252
 LABEL maintainer "Richard Davis <crashvb@gmail.com>"
 
 # Install packages, download files ...
@@ -19,6 +19,7 @@ RUN install --directory --group=bind --mode=0775 --owner=root /var/lib/bind /var
 	install --group=bind --mode=0644 --owner=bind /dev/null ${BIND_CONFIG}/zones.rfc3171 && \
 	install --group=bind --mode=0644 --owner=bind /dev/null ${BIND_CONFIG}/zones.rfc4193 && \
 	rm ${BIND_CONFIG}/rndc.key && \
+	bind-update-root && \
 	mv ${BIND_CONFIG} /usr/local/share/bind/config && \
 	mv /usr/local/share/bind/config/named.conf.options /usr/local/share/bind/config/named.conf.options.dist
 

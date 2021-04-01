@@ -1,0 +1,12 @@
+#!/bin/bash
+
+source /usr/local/lib/entrypoint.sh
+
+set -e
+
+path=$BIND_CONFIG/db.root
+url="ftp://ftp.rs.internic.net/domain/db.cache"
+
+log "Updating root DNS servers ..."
+wget --output-document=- --password=ftp --user=ftp "$url" | install --group=bind --mode=0644 --owner=bind /dev/stdin "$path"
+
