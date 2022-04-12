@@ -1,5 +1,10 @@
 # named-docker
 
+[![version)](https://img.shields.io/docker/v/crashvb/named/latest)](https://hub.docker.com/repository/docker/crashvb/named)
+[![image size](https://img.shields.io/docker/image-size/crashvb/named/latest)](https://hub.docker.com/repository/docker/crashvb/named)
+[![linting](https://img.shields.io/badge/linting-hadolint-yellow)](https://github.com/hadolint/hadolint)
+[![license](https://img.shields.io/github/license/crashvb/named-docker.svg)](https://github.com/crashvb/named-docker/blob/master/LICENSE.md)
+
 ## Overview
 
 This docker image contains [Berkeley Internet Name Domain](https://www.isc.org/downloads/bind/) (<tt>BIND</tt>).
@@ -36,7 +41,7 @@ The embedded entrypoint script is located at `/etc/entrypoint.d/bind` and perfor
 
  | Variable | Default Value | Description |
  | -------- | ------------- | ----------- |
- | BIND_FORWARDERS | 8.8.8.8; 8.8.4.4; 2001:4860:4860::8888; 2001:4860:4860::8844; | A semicolon separated list of nameservers. |
+ | BIND\_FORWARDERS | 8.8.8.8; 8.8.4.4; 2001:4860:4860::8888; 2001:4860:4860::8844; | A semicolon separated list of nameservers. |
 
 ## Healthcheck Scripts
 

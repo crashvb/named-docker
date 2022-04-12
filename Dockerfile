@@ -18,8 +18,8 @@ RUN docker-apt bind9 dnsutils
 
 # Configure: bind9
 ENV BIND_CONFIG=/etc/bind
-ADD bind-* /usr/local/bin/
-ADD db.* named.conf.* zones.* /usr/local/share/bind/
+COPY bind-* /usr/local/bin/
+COPY db.* named.conf.* zones.* /usr/local/share/bind/
 RUN install --directory --group=bind --mode=0775 --owner=root /var/lib/bind /var/run/named && \
 	install --directory --group=adm --mode=0755 --owner=bind /var/log/bind && \
 	sed --expression="/conf.options/iinclude \"${BIND_CONFIG}/named.conf.rndc\";" --in-place ${BIND_CONFIG}/named.conf && \
@@ -36,13 +36,13 @@ RUN install --directory --group=bind --mode=0775 --owner=root /var/lib/bind /var
 	mv /usr/local/share/bind/config/named.conf.options /usr/local/share/bind/config/named.conf.options.dist
 
 # Configure: supervisor
-ADD supervisord.bind.conf /etc/supervisor/conf.d/bind.conf
+COPY supervisord.bind.conf /etc/supervisor/conf.d/bind.conf
 
 # Configure: entrypoint
-ADD entrypoint.bind /etc/entrypoint.d/bind
+COPY entrypoint.bind /etc/entrypoint.d/bind
 
 # Configure: healthcheck
-ADD healthcheck.bind /etc/healthcheck.d/bind
+COPY healthcheck.bind /etc/healthcheck.d/bind
 
 EXPOSE 53/udp
 
