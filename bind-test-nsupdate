@@ -117,11 +117,7 @@ log "	Update Key   : ${key}"
 log "	A Record     : ${cn}"
 log "	IP Address   : ${address}"
 
-nsopts=(-k "${key}")
-if [[ -n "${DEBUG}" ]] ; then
-	nsopts+=(-d)
-	#set -x
-fi
+nsopts=(-d -k "${key}")
 
 result=0
 
