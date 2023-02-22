@@ -2,113 +2,166 @@
 
 source /usr/local/lib/entrypoint.sh
 
-BOLD='\033[0;1m'
+BOLD="\033[0;1m"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-GRAY='\033[0;90m'
-NC='\033[0m'
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+MAGENTA="\033[0;35m"
+GRAY="\033[0;90m"
+NC="\033[0m"
 
 root=/etc/bind/keys
 server=127.0.0.1
 
-if [[ -z $2 ]] ; then
-	echo "usage: $0 <fwdzone> <update key name> [<revzone=1.168.192.in-addr.arpa> <ip address=192.168.1.1>]"
-	echo "ex: $0 test.com updater.test.com"
+if [[ -z "${2}" ]] ; then
+	echo "usage: ${0} <fwdzone> <update key name> [<revzone=1.168.192.in-addr.arpa> <ip address=192.168.1.1>]"
+	echo "ex: ${0} test.com updater.test.com"
 	exit 1
 fi
 
+# 1 - command
+# 2 - expected output
+# 2 - description
+function call_dig()
+{
+	local result=0
+
+	local tmp=$(eval "${1}" 2>&1)
+	verify $? "${3}" "${2}" "${tmp}" || result=1
+	[[ -n ${DEBUG} ]] && echo -e "${GRAY}${1}${NC}"
+
+	return "${result}"
+}
+
+# 1 - description
 function call_nsupdate()
 {
-	tmp=$(mktemp /tmp/nsupdate.XXXXXX)
-	cat > $tmp
-	[[ -n "$DEBUG" ]] && cat $tmp
-	nsupdate "${nsopts[@]}" $tmp
-	rm --force $tmp
+	local conf="$(mktemp /tmp/nsupdate.XXXXXX)"
+	cat > "${conf}"
+
+	local result=0
+
+	local cmd="nsupdate ${nsopts[@]} \"${conf}\""
+	local tmp=$(eval "${cmd}" 2>&1)
+	verify $? "${1}" "Reply from.*NOERROR" "${tmp}" || result=1
+	[[ -n ${DEBUG} ]] && echo -e "${GRAY}${cmd}${NC}"
+	[[ -n "${DEBUG}" ]] && echo -e "${MAGENTA}$(cat "${conf}")${NC}"
+
+	rm --force "${conf}"
+
+	return "${result}"
 }
 
 function reverseRecord() {
-	echo $1 | awk -F. '{print $4"."$3"."$2"."$1".in-addr.arpa."}'
+	echo "${1}" | awk -F. '{print $4"."$3"."$2"."$1".in-addr.arpa."}'
 }
 
+# 1 - return code
+# 2 - description
+# 3 - expected output
+# 4 - command output
 function verify
 {
-	printf "Checking $2"
-	printf ".%0.s" $(eval echo "{1..$(( $(tput cols) - 21 - $(expr length "$2")))}")
-	if [[ $1 -eq 0 ]] ; then
-		echo -e "[  ${GREEN}PASSED${NC}  ]"
+	local result="${1}"
+
+	# RANT: nsupdate and dig exit codes are garbage!
+	#
+	#	It is expected that developers who are implementing CLIs translate state information between the remote
+	#	API / protocol / whatever to which they are interacting, and the local interface method. One `/bin/true`
+	#	is enough, thank you! (i.e. scraping is not a methodology!)"
+	#
+	#	> Me:       "nsupdate, please do XYZ."
+	#	> nsupdate: "okay, I did NOT do XYZ, successfully."
+	#	> Me:       "dig, please verify that nsupdate did XYZ."
+	#	> dig:      "okay, I successfully found nothing."
+	#	> Me:       =/ ...
+
+	echo -n "Checking : ${2}"
+	printf ".%0.s" $(eval echo "{1..$(( $(tput cols) - 21 - $(expr length "${2}")))}")
+	# Successful ...
+	if [[ "${1}" -eq 0 ]] ; then
+		# ... for the right reason
+		if [[ "${4}" =~ ${3} ]] ; then
+			echo -e "[ ${GREEN}PASSED${NC} ]"
+			[[ -n ${DEBUG} ]] && echo -e "${BLUE}$(echo "${4}" | grep --extended-regexp "${3}" | awk '{$1=$1;print}')${NC}"
+		# ... for the wrong reason
+		else
+			echo -e "[ ${RED}PASSED${NC} ]"
+			result=1
+			echo -e "${YELLOW}Expected: ${3}${NC}"
+			[[ -n "${DEBUG}" ]] && echo -e "${BLUE}${4}${NC}"
+		fi
+	# Unsuccessful ...
 	else
-		echo -e "[  ${RED}FAILED${NC}  ]"
+		echo -e "[ ${RED}FAILED${NC} ]"
+		echo -e "${YELLOW}Expected: ${3}${NC}"
+		[[ -n "${DEBUG}" ]] && echo -e "${BLUE}${4}${NC}"
 	fi
 
-	return $1
+	return "${result}"
 }
 
-fwdzone=$1
-key=$(ls $root/K$2*.key)
-key=${key%.*}
-revzone=${3:-1.168.192.in-addr.arpa}
-address=${4:-192.168.1.1}
-cn=$(basename $0).$fwdzone.
-revaddress=$(reverseRecord $address)
+fwdzone="${1}"
+key="${root}/K${2}.key"
+revzone="${3:-1.168.192.in-addr.arpa}"
+address="${4:-192.168.1.1}"
+cn="$(basename "${0}").${fwdzone}."
+revaddress="$(reverseRecord "${address}")"
 
 log "Testing using:"
-log "	Foward Zone  : $fwdzone"
-log "	Reverse Zone : $revzone"
-log "	Update Key   : $key"
-log "	A Record     : $cn"
-log "	IP Address   : $address"
+log "	Foward Zone  : ${fwdzone}"
+log "	Reverse Zone : ${revzone}"
+log "	Update Key   : ${key}"
+log "	A Record     : ${cn}"
+log "	IP Address   : ${address}"
 
-nsopts=(-k $key)
-if [[ -n "$DEBUG" ]] ; then
+nsopts=(-k "${key}")
+if [[ -n "${DEBUG}" ]] ; then
 	nsopts+=(-d)
-	set -x
+	#set -x
 fi
 
 result=0
 
-log "Adding record: $cn -> $address ..."
-call_nsupdate <<-EOF
-	server $server
-	zone $fwdzone
-	update delete $cn A
-	update add $cn 3600 A $address
+log "Adding record: ${cn} -> ${address} ..."
+call_nsupdate "provision forward record" <<-EOF || result=1
+	server ${server}
+	zone ${fwdzone}
+	update delete ${cn} A
+	update add ${cn} 3600 A ${address}
 	send
 EOF
-[[ "X$(dig +short $cn @$server)" == "X$address" ]]
-verify $? "positive forward lookup" || result=1
+call_dig "dig +short \"${cn}\" @\"${server}\"" "${address}" "positive forward lookup" || result=1
 
-log "Adding record: $address -> $cn ..."
-call_nsupdate <<-EOF
-	server $server
-	zone $revzone
-	update delete $revaddress PTR
-	update add $revaddress 3600 PTR $cn
+log "Adding record: ${address} -> ${cn} ..."
+call_nsupdate "provision reverse record" <<-EOF || result=1
+	server ${server}
+	zone ${revzone}
+	update delete ${revaddress} PTR
+	update add ${revaddress} 3600 PTR ${cn}
 	send
 EOF
-[[ "X$(dig +short -x $address @$server)" == "X$cn" ]]
-verify $? "positive reverse lookup" || result=1
+call_dig "dig +short -x \"${address}\" @\"${server}\"" "${cn}" "positive reverse lookup" || result=1
 
-log "Removing record: $cn ..."
-call_nsupdate <<-EOF
-	server $server
-	zone $fwdzone
-	update delete $cn A
+log "Removing record: ${cn} ..."
+call_nsupdate "unprovision forward record" <<-EOF || result=1
+	server ${server}
+	zone ${fwdzone}
+	update delete ${cn} A
 	send
 EOF
-[[ "X$(dig +short $cn @$server)" == "X" ]]
-verify $? "negative forward lookup" || result=1
+call_dig "dig \"${cn}\" @\"${server}\"" "ANSWER: 0" "negative forward lookup" || result=1
 
-log "Removing record: $address ..."
-call_nsupdate <<-EOF
-	server $server
-	zone $revzone
-	update delete $revaddress PTR
+log "Removing record: ${address} ..."
+call_nsupdate "unprovision reverse record" <<-EOF || result=1
+	server ${server}
+	zone ${revzone}
+	update delete ${revaddress} PTR
 	send
 EOF
-[[ "X$(dig +short -x $address @$server)" == "X" ]]
-verify $? "negative reverse lookuip" || result=1
+call_dig "dig -x \"${address}\" @\"${server}\"" "ANSWER: 0" "negative reverse lookuip" || result=1
 
-exit $result
+exit "${result}"
+

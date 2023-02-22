@@ -1,34 +1,49 @@
 #!/bin/bash
 
-set -e
+set -e -o pipefail
 
-zone=test.com
-ip=192.168.1.123
-key=updater.$zone
-revzone=1.168.192.in-addr.arpa
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+NC="\033[0m"
 
 log "Starting supervisord ..."
+[[ -n "${DEBUG_WITH_NAMED}" ]] || \
+	sed --expression="s/stderr/null/g" \
+		--expression="s/stdout/null/g" \
+		--in-place /etc/supervisor/conf.d/bind.conf
 /usr/bin/supervisord --configuration=/etc/supervisor/supervisord.conf &
 sleep 1
-while ! grep 'running$' /var/log/supervisor/bind-stderr*.log > /dev/null ; do
+while [[ $(pgrep --count --full /usr/sbin/named) -eq 0 ]] ; do
 	log "Waiting for bind ..."
 	sleep 1
 done
 
-log "Generating key: $key ..."
-bind-keygen $key
+zone=test.com
+ip=192.168.1.123
+key="updater.${zone}"
+revzone=1.168.192.in-addr.arpa
 
-log "Generating zone: $zone ..."
-bind-zonegen $zone fwd $key
+log "Generating key: ${key} ..."
+bind-keygen "${key}"
 
-log "Generating zone: $revzone ..."
-ZONE_EMAIL=admin.${zone}. ZONE_NAME_SERVER=ns1.${zone}. bind-zonegen $revzone 1918 $key
+log "Generating zone: ${zone} ..."
+bind-zonegen "${zone}" fwd "${key}"
+
+log "Generating zone: ${revzone} ..."
+ZONE_EMAIL="admin.${zone}." ZONE_NAME_SERVER="ns1.${zone}." bind-zonegen "${revzone}" 1918 "${key}"
 
 log "Reloading ..."
 rndc reload
 
-log "Testing nsupdate ..."
-bind-test-nsupdate $zone $key $revzone $ip
+result=0
 
-log "--- Test Passed ---"
-exit 0
+log "Testing nsupdate ..."
+bind-test-nsupdate "${zone}" "${key}" "${revzone}" "${ip}" || result=1
+
+if [[ "${result}" -eq 0 ]] ; then
+	log "--- ${GREEN}Test Passed${NC} ---"
+else
+	log "--- ${RED}Test FAILED${NC} ---"
+fi
+exit "${result}"
+

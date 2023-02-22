@@ -1,5 +1,5 @@
 key ${name} {
-	algorithm HMAC-MD5;
+	algorithm ${BIND_KEY_ALGORITHM};
 	secret "${secret}";
 };
 

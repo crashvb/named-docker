@@ -1,10 +1,10 @@
-FROM crashvb/supervisord:202201080446@sha256:8fe6a411bea68df4b4c6c611db63c22f32c4a455254fa322f381d72340ea7226
+FROM crashvb/supervisord:202302200210@sha256:7ad51ecd78041df68ff7800cbbb6ebd6c0b5644e1c8ff80bd55943710d2dd42d
 ARG org_opencontainers_image_created=undefined
 ARG org_opencontainers_image_revision=undefined
 LABEL \
 	org.opencontainers.image.authors="Richard Davis <crashvb@gmail.com>" \
-	org.opencontainers.image.base.digest="sha256:8fe6a411bea68df4b4c6c611db63c22f32c4a455254fa322f381d72340ea7226" \
-	org.opencontainers.image.base.name="crashvb/supervisord:202201080446" \
+	org.opencontainers.image.base.digest="sha256:7ad51ecd78041df68ff7800cbbb6ebd6c0b5644e1c8ff80bd55943710d2dd42d" \
+	org.opencontainers.image.base.name="crashvb/supervisord:202302200210" \
 	org.opencontainers.image.created="${org_opencontainers_image_created}" \
 	org.opencontainers.image.description="Image containing named." \
 	org.opencontainers.image.licenses="Apache-2.0" \
@@ -17,7 +17,7 @@ LABEL \
 RUN docker-apt bind9 dnsutils
 
 # Configure: bind9
-ENV BIND_CONFIG=/etc/bind
+ENV BIND_CONFIG=/etc/bind BIND_KEY_ALGORITHM=HMAC-SHA256
 COPY bind-* /usr/local/bin/
 COPY db.* named.conf.* zones.* /usr/local/share/bind/
 RUN install --directory --group=bind --mode=0775 --owner=root /var/lib/bind /var/run/named && \

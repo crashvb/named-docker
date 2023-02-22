@@ -2,30 +2,25 @@
 
 source /usr/local/lib/entrypoint.sh
 
-set -e
+set -e -o pipefail
 
-root=$BIND_CONFIG/keys
-config_keys=$BIND_CONFIG/named.conf.keys
-
-if [[ -z $1 ]] ; then
-	echo "usage: $0 <update key name>"
-	echo "ex: $0 updater.test.com"
+if [[ -z "${1}" ]] ; then
+	echo "usage: ${0} <update key name>"
+	echo "ex: ${0} updater.test.com"
 	exit 1
 fi
 
-mkdir --parents $root
+root="${BIND_CONFIG}/keys"
+config_keys="${BIND_CONFIG}/named.conf.keys"
+keyfile="${root}/K${1}.key"
 
-log "Generating key: $1 ..."
-export prefix=$(dnssec-keygen -a HMAC-MD5 -b 512 -K $root -n USER $1)
+install --directory --group=bind --mode=0750 --owner=bind "${root}"
 
-log "Adding key to $config_keys ..."
-export name=$1.
-export secret=$(cat $root/$prefix.key | awk '{print $7,$8}')
-cp --backup=numbered $config_keys $config_keys.bak
-envsubst "\$name \$secret" < /usr/local/share/bind/named.conf.keys.template >> $config_keys
+log "Generating: ${keyfile} ..."
+install --group=bind --mode=0440 --owner=bind /dev/null "${keyfile}"
+tsig-keygen -a "${BIND_KEY_ALGORITHM}" "${1}" > "${keyfile}"
 
-log "Applying ownership and permissions ..."
-chown root:bind $root/$prefix.*
-chmod 0640 $root/$prefix*.key
-chmod 0600 $root/$prefix*.private
+log "Adding key to ${config_keys} ..."
+cp --backup=numbered "${config_keys}" "${config_keys}.bak"
+cat "${keyfile}" >> "${config_keys}"
 
