@@ -43,14 +43,6 @@ The embedded entrypoint script is located at `/etc/entrypoint.d/bind` and perfor
  | -------- | ------------- | ----------- |
  | BIND\_FORWARDERS | 8.8.8.8; 8.8.4.4; 2001:4860:4860::8888; 2001:4860:4860::8844; | A semicolon separated list of nameservers. |
 
-## Healthcheck Scripts
-
-### named
-
-The embedded healthcheck script is located at `/etc/healthcheck.d/named` and performs the following actions:
-
-1. Verifies that named is able to resolve `www.google.com`.
-
 ## Standard Configuration
 
 ### Container Layout
