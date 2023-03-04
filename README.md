@@ -53,9 +53,12 @@ The embedded entrypoint script is located at `/etc/entrypoint.d/bind` and perfor
 │  ├─ bind/
 │  ├─ entrypoint.d/
 │  │  └─ bind
-│  └─ healthcheck.d/
-│     └─ bind
-└─ usr/
+│  ├─ healthcheck.d/
+│  │  └─ bind
+│  └─ supervisor/
+│     └─ config.d/
+│        └─ bind.conf
+├─ usr/
 │  └─ local/
 │     └─ bin/
 │        ├─ bind-keygen
